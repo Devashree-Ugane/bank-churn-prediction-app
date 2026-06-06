@@ -1,0 +1,6 @@
+.vs/
+*.sqlite
+token.txt
+__pycache__/
+*.pkl
+*.pyc
