@@ -5,6 +5,7 @@ import pickle
 import json
 import os
 import shap
+import sys  # Added to track active virtual environment packages Safely
 
 # ================================
 # SESSION STATE INIT
@@ -102,7 +103,7 @@ with tab1:
     raw_input_data = user_input_features()
     input_data = raw_input_data.copy()
 
-    # CRITICAL FIX: Align input columns dynamically with training data expected by your pipeline
+    # Align input columns dynamically with training data expected by your pipeline
     if pipeline is not None and hasattr(pipeline, "feature_names_in_"):
         try:
             input_data = input_data[pipeline.feature_names_in_]
@@ -213,7 +214,7 @@ with tab1:
 
                 st.dataframe(
                     shap_df.style.background_gradient(subset=["SHAP Value"], cmap="RdYlGn_r"),
-                    use_container_width=True
+                    width="stretch"
                 )
                 st.caption("Positive SHAP = pushes toward churn | Negative SHAP = pushes toward staying")
 
@@ -276,7 +277,7 @@ with tab1:
                         })
 
                 drift_df = pd.DataFrame(drift_details)
-                st.dataframe(drift_df, use_container_width=True)
+                st.dataframe(drift_df, width="stretch")
 
                 red_flags = drift_df[drift_df["Status"].str.startswith("🔴")]
                 if not red_flags.empty:
@@ -328,7 +329,7 @@ with tab2:
                 index=["Actual: Stay", "Actual: Churn"],
                 columns=["Predicted: Stay", "Predicted: Churn"]
             )
-            st.dataframe(cm_df.style.background_gradient(cmap="Blues"), use_container_width=False)
+            st.dataframe(cm_df.style.background_gradient(cmap="Blues"), width="content")
 
             tn, fp, fn, tp = cm[0][0], cm[0][1], cm[1][0], cm[1][1]
             st.caption(f"True Negatives: {tn} | False Positives: {fp} | False Negatives: {fn} | True Positives: {tp}")
@@ -345,7 +346,7 @@ with tab2:
         numeric_cols_comp = ["accuracy", "precision", "recall", "f1", "roc_auc"]
         st.dataframe(
             comp_df.style.highlight_max(subset=numeric_cols_comp, color="#d4edda"),
-            use_container_width=True
+            width="stretch"
         )
         st.caption("Green = best value in each column")
 
@@ -357,9 +358,9 @@ with tab3:
 
     if st.button("🔄 Retrain Model Now"):
         with st.spinner("Retraining model... this may take a minute"):
-            # Call train.py safely relative to this directory
+            # Fixed runtime execution using active environment paths
             train_script = os.path.join(BASE_DIR, "train.py")
-            result = os.system(f"python {train_script}")
+            result = os.system(f"{sys.executable} {train_script}")
             if result == 0:
                 st.success("✅ Model retrained successfully! Please reboot or reload the page to apply new pipelines.")
                 st.rerun()
@@ -372,7 +373,7 @@ with tab3:
     if retrain_history:
         history_df = pd.DataFrame(retrain_history)
         history_df = history_df.sort_values("timestamp", ascending=False)
-        st.dataframe(history_df, use_container_width=True)
+        st.dataframe(history_df, width="stretch")
         st.line_chart(history_df.set_index("timestamp")[["roc_auc", "f1", "accuracy"]])
 
     st.divider()
@@ -382,6 +383,6 @@ with tab3:
         log_path = os.path.join(DATA_DIR, "user_inputs.csv")
         user_log = pd.read_csv(log_path)
         st.write(f"Total predictions made: **{len(user_log)}**")
-        st.dataframe(user_log.tail(20), use_container_width=True)
+        st.dataframe(user_log.tail(20), width="stretch")
     except:
         st.info("No prediction log yet.")
